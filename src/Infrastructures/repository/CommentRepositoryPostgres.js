@@ -66,9 +66,14 @@ class CommentRepositoryPostgres extends CommentRepository {
 
   async getCommentsByThreadId(threadId) {
     const query = {
-      text: `SELECT c.id, u.username, c.created_at as date, c.content, c.is_delete
+      text: `SELECT c.id, u.username, c.created_at as date, c.content, c.is_delete, COALESCE(cl.like_count, 0) as like_count
               FROM comments c
               LEFT JOIN users u ON c.owner = u.id
+              LEFT JOIN (
+                SELECT comment_id, COUNT(*)::int as like_count
+                FROM user_comment_likes
+                GROUP BY comment_id
+              ) cl ON cl.comment_id = c.id
               WHERE c.thread_id = $1
               ORDER BY c.created_at ASC`,
       values: [threadId],
@@ -82,7 +87,36 @@ class CommentRepositoryPostgres extends CommentRepository {
       date: row.date,
       content: row.content,
       isDelete: row.is_delete,
+      likeCount: row.like_count,
     }));
+  }
+
+  async isCommentLikedByUser(commentId, userId) {
+    const query = {
+      text: 'SELECT 1 FROM user_comment_likes WHERE comment_id = $1 AND owner = $2',
+      values: [commentId, userId],
+    };
+
+    const result = await this._pool.query(query);
+    return !!result.rowCount;
+  }
+
+  async likeComment(commentId, userId) {
+    const query = {
+      text: 'INSERT INTO user_comment_likes (comment_id, owner) VALUES ($1, $2)',
+      values: [commentId, userId],
+    };
+
+    await this._pool.query(query);
+  }
+
+  async unlikeComment(commentId, userId) {
+    const query = {
+      text: 'DELETE FROM user_comment_likes WHERE comment_id = $1 AND owner = $2',
+      values: [commentId, userId],
+    };
+
+    await this._pool.query(query);
   }
 }
 

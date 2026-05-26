@@ -24,6 +24,7 @@ describe('GetThreadDetailUseCase', () => {
         username: 'johndoe',
         date: '2021-08-08T07:22:33.555Z',
         content: 'sebuah comment',
+        likeCount: 2,
       },
     ];
 
@@ -49,6 +50,7 @@ describe('GetThreadDetailUseCase', () => {
           username: 'johndoe',
           date: '2021-08-08T07:22:33.555Z',
           content: 'sebuah comment',
+          likeCount: 2,
           replies: [
             {
               id: 'reply-123',

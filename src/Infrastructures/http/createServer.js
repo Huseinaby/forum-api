@@ -14,7 +14,7 @@ const createServer = async (container) => {
   app.get('/hello', (_req, res) => {
     res.status(200).json({
       status: 'success',
-      message: 'Hello VPS'
+      message: 'Hello!'
     });
   });
 

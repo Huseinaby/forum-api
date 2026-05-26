@@ -147,4 +147,67 @@ describe('HTTP API - Threads', () => {
       expect(response.body.status).toEqual('fail');
     });
   });
+
+  describe('when PUT /threads/{threadId}/comments/{commentId}/likes', () => {
+    it('should response 200 and toggle like status for a comment', async () => {
+      const app = await createServer(container);
+
+      await request(app).post('/users').send({
+        username: 'dicoding',
+        password: 'secret',
+        fullname: 'Dicoding Indonesia',
+      });
+
+      const loginRes = await request(app).post('/authentications').send({
+        username: 'dicoding',
+        password: 'secret',
+      });
+
+      const { accessToken } = loginRes.body.data;
+
+      const threadRes = await request(app)
+        .post('/threads')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ title: 'sebuah thread', body: 'sebuah body thread' });
+
+      const threadId = threadRes.body.data.addedThread.id;
+
+      const commentRes = await request(app)
+        .post(`/threads/${threadId}/comments`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ content: 'sebuah comment' });
+
+      const commentId = commentRes.body.data.addedComment.id;
+
+      const firstToggleResponse = await request(app)
+        .put(`/threads/${threadId}/comments/${commentId}/likes`)
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      expect(firstToggleResponse.status).toEqual(200);
+      expect(firstToggleResponse.body.status).toEqual('success');
+
+      const likedThreadDetail = await request(app).get(`/threads/${threadId}`);
+      expect(likedThreadDetail.body.data.thread.comments[0].likeCount).toEqual(1);
+
+      const secondToggleResponse = await request(app)
+        .put(`/threads/${threadId}/comments/${commentId}/likes`)
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      expect(secondToggleResponse.status).toEqual(200);
+      expect(secondToggleResponse.body.status).toEqual('success');
+
+      const unlikedThreadDetail = await request(app).get(`/threads/${threadId}`);
+      expect(unlikedThreadDetail.body.data.thread.comments[0].likeCount).toEqual(0);
+    });
+
+    it('should response 401 when request does not have access token', async () => {
+      const app = await createServer(container);
+
+      const response = await request(app)
+        .put('/threads/thread-123/comments/comment-123/likes');
+
+      expect(response.status).toEqual(401);
+      expect(response.body.status).toEqual('fail');
+    });
+  });
 });

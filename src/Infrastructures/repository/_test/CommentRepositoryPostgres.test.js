@@ -1,6 +1,7 @@
 import CommentsTableTestHelper from '../../../../tests/CommentsTableTestHelper.js';
 import ThreadsTableTestHelper from '../../../../tests/ThreadsTableTestHelper.js';
 import UsersTableTestHelper from '../../../../tests/UsersTableTestHelper.js';
+import UserCommentLikesTableTestHelper from '../../../../tests/UserCommentLikesTableTestHelper.js';
 import NotFoundError from '../../../Commons/exceptions/NotFoundError.js';
 import AuthorizationError from '../../../Commons/exceptions/AuthorizationError.js';
 import NewComment from '../../../Domains/comments/entities/NewComment.js';
@@ -10,6 +11,7 @@ import CommentRepositoryPostgres from '../CommentRepositoryPostgres.js';
 
 describe('CommentRepositoryPostgres', () => {
   afterEach(async () => {
+    await UserCommentLikesTableTestHelper.cleanTable();
     await CommentsTableTestHelper.cleanTable();
     await ThreadsTableTestHelper.cleanTable();
     await UsersTableTestHelper.cleanTable();
@@ -185,6 +187,29 @@ describe('CommentRepositoryPostgres', () => {
       expect(comments[0].id).toEqual('comment-123');
       expect(comments[0].username).toEqual('dicoding');
       expect(comments[0].content).toEqual('sebuah comment');
+      expect(comments[0].likeCount).toEqual(0);
+    });
+
+    it('should return comments with likeCount correctly', async () => {
+      // Arrange
+      await UsersTableTestHelper.addUser({ id: 'user-123', username: 'dicoding' });
+      await UsersTableTestHelper.addUser({ id: 'user-456', username: 'johndoe' });
+      await ThreadsTableTestHelper.addThread({ id: 'thread-123', owner: 'user-123' });
+      await CommentsTableTestHelper.addComment({
+        id: 'comment-123',
+        threadId: 'thread-123',
+        owner: 'user-123',
+      });
+      await UserCommentLikesTableTestHelper.addLike({ commentId: 'comment-123', owner: 'user-123' });
+      await UserCommentLikesTableTestHelper.addLike({ commentId: 'comment-123', owner: 'user-456' });
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+
+      // Action
+      const comments = await commentRepositoryPostgres.getCommentsByThreadId('thread-123');
+
+      // Assert
+      expect(comments).toHaveLength(1);
+      expect(comments[0].likeCount).toEqual(2);
     });
 
     it('should return deleted comment with deleted text', async () => {
@@ -236,6 +261,53 @@ describe('CommentRepositoryPostgres', () => {
       expect(comments).toHaveLength(2);
       expect(comments[0].id).toEqual('comment-456'); // older comment
       expect(comments[1].id).toEqual('comment-123'); // newer comment
+    });
+  });
+
+  describe('comment likes functions', () => {
+    it('should return false when comment is not liked by user', async () => {
+      // Arrange
+      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await ThreadsTableTestHelper.addThread({ id: 'thread-123', owner: 'user-123' });
+      await CommentsTableTestHelper.addComment({ id: 'comment-123', threadId: 'thread-123', owner: 'user-123' });
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+
+      // Action
+      const isLiked = await commentRepositoryPostgres.isCommentLikedByUser('comment-123', 'user-123');
+
+      // Assert
+      expect(isLiked).toBe(false);
+    });
+
+    it('should persist like correctly', async () => {
+      // Arrange
+      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await ThreadsTableTestHelper.addThread({ id: 'thread-123', owner: 'user-123' });
+      await CommentsTableTestHelper.addComment({ id: 'comment-123', threadId: 'thread-123', owner: 'user-123' });
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+
+      // Action
+      await commentRepositoryPostgres.likeComment('comment-123', 'user-123');
+
+      // Assert
+      const likes = await UserCommentLikesTableTestHelper.findLike('comment-123', 'user-123');
+      expect(likes).toHaveLength(1);
+    });
+
+    it('should delete persisted like correctly', async () => {
+      // Arrange
+      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await ThreadsTableTestHelper.addThread({ id: 'thread-123', owner: 'user-123' });
+      await CommentsTableTestHelper.addComment({ id: 'comment-123', threadId: 'thread-123', owner: 'user-123' });
+      await UserCommentLikesTableTestHelper.addLike({ commentId: 'comment-123', owner: 'user-123' });
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+
+      // Action
+      await commentRepositoryPostgres.unlikeComment('comment-123', 'user-123');
+
+      // Assert
+      const likes = await UserCommentLikesTableTestHelper.findLike('comment-123', 'user-123');
+      expect(likes).toHaveLength(0);
     });
   });
 });
