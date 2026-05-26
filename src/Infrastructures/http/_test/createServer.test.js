@@ -27,6 +27,19 @@ describe('HTTP server', () => {
     expect(response.status).toEqual(404);
   });
 
+  it('should response 200 and say hello', async () => {
+    // Arrange
+    const app = await createServer({});
+
+    // Action
+    const response = await request(app).get('/hello');
+
+    // Assert
+    expect(response.status).toEqual(200);
+    expect(response.body.status).toEqual('success');
+    expect(response.body.message).toEqual('Hello!');
+  });
+
   describe('when POST /users', () => {
     it('should response 201 and persisted user', async () => {
       // Arrange
