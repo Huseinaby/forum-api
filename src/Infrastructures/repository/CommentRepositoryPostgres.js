@@ -1,5 +1,4 @@
 import AddedComment from '../../Domains/comments/entities/AddedComment.js';
-import CommentDetail from '../../Domains/comments/entities/CommentDetail.js';
 import CommentRepository from '../../Domains/comments/CommentRepository.js';
 import NotFoundError from '../../Commons/exceptions/NotFoundError.js';
 import AuthorizationError from '../../Commons/exceptions/AuthorizationError.js';
@@ -25,10 +24,7 @@ class CommentRepositoryPostgres extends CommentRepository {
     return new AddedComment({ ...result.rows[0] });
   }
 
-  async deleteComment(commentId, userId) {
-    await this.verifyCommentExists(commentId);
-    await this.verifyCommentOwner(commentId, userId);
-
+  async deleteComment(commentId) {
     const query = {
       text: 'UPDATE comments SET is_delete = true WHERE id = $1',
       values: [commentId],
@@ -81,14 +77,7 @@ class CommentRepositoryPostgres extends CommentRepository {
 
     const result = await this._pool.query(query);
 
-    return result.rows.map((row) => new CommentDetail({
-      id: row.id,
-      username: row.username,
-      date: row.date,
-      content: row.content,
-      isDelete: row.is_delete,
-      likeCount: row.like_count,
-    }));
+    return result.rows;
   }
 
   async isCommentLikedByUser(commentId, userId) {

@@ -24,7 +24,9 @@ describe('GetThreadDetailUseCase', () => {
         username: 'johndoe',
         date: '2021-08-08T07:22:33.555Z',
         content: 'sebuah comment',
+        is_delete: false,
         likeCount: 2,
+        like_count: 2,
       },
     ];
 
@@ -34,6 +36,7 @@ describe('GetThreadDetailUseCase', () => {
         username: 'dicoding',
         date: '2021-08-08T07:59:48.766Z',
         content: 'sebuah balasan',
+        is_delete: false,
       },
     ];
 

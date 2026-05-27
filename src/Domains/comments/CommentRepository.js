@@ -5,7 +5,7 @@ class CommentRepository {
   }
 
   // eslint-disable-next-line no-unused-vars
-  async deleteComment(_commentId, _userId) {
+  async deleteComment(_commentId) {
     throw new Error('COMMENT_REPOSITORY.METHOD_NOT_IMPLEMENTED');
   }
 

@@ -15,6 +15,10 @@ describe('DeleteCommentUseCase', () => {
 
     mockThreadRepository.verifyThreadExists = vi.fn()
       .mockImplementation(() => Promise.resolve());
+    mockCommentRepository.verifyCommentExists = vi.fn()
+      .mockImplementation(() => Promise.resolve());
+    mockCommentRepository.verifyCommentOwner = vi.fn()
+      .mockImplementation(() => Promise.resolve());
     mockCommentRepository.deleteComment = vi.fn()
       .mockImplementation(() => Promise.resolve());
 
@@ -28,7 +32,9 @@ describe('DeleteCommentUseCase', () => {
 
     // Assert
     expect(mockThreadRepository.verifyThreadExists).toBeCalledWith(threadId);
-    expect(mockCommentRepository.deleteComment).toBeCalledWith(commentId, userId);
+    expect(mockCommentRepository.verifyCommentExists).toBeCalledWith(commentId);
+    expect(mockCommentRepository.verifyCommentOwner).toBeCalledWith(commentId, userId);
+    expect(mockCommentRepository.deleteComment).toBeCalledWith(commentId);
   });
 
   it('should throw NotFoundError when thread not found', async () => {
@@ -44,6 +50,9 @@ describe('DeleteCommentUseCase', () => {
       .mockImplementation(() => {
         throw new Error('thread tidak ditemukan');
       });
+    mockCommentRepository.verifyCommentExists = vi.fn();
+    mockCommentRepository.verifyCommentOwner = vi.fn();
+    mockCommentRepository.deleteComment = vi.fn();
 
     const deleteCommentUseCase = new DeleteCommentUseCase({
       threadRepository: mockThreadRepository,
@@ -53,6 +62,10 @@ describe('DeleteCommentUseCase', () => {
     // Action and Assert
     await expect(deleteCommentUseCase.execute(threadId, commentId, userId))
       .rejects.toThrowError('thread tidak ditemukan');
+
+    expect(mockCommentRepository.verifyCommentExists).not.toBeCalled();
+    expect(mockCommentRepository.verifyCommentOwner).not.toBeCalled();
+    expect(mockCommentRepository.deleteComment).not.toBeCalled();
   });
 
   it('should throw NotFoundError when comment not found', async () => {
@@ -66,10 +79,13 @@ describe('DeleteCommentUseCase', () => {
 
     mockThreadRepository.verifyThreadExists = vi.fn()
       .mockImplementation(() => Promise.resolve());
-    mockCommentRepository.deleteComment = vi.fn()
+    mockCommentRepository.verifyCommentExists = vi.fn()
+      .mockImplementation(() => Promise.resolve());
+    mockCommentRepository.verifyCommentOwner = vi.fn()
       .mockImplementation(() => {
-        throw new Error('komentar tidak ditemukan');
+        throw new Error('Anda tidak memiliki akses untuk menghapus komentar ini');
       });
+    mockCommentRepository.deleteComment = vi.fn();
 
     const deleteCommentUseCase = new DeleteCommentUseCase({
       threadRepository: mockThreadRepository,
@@ -78,7 +94,9 @@ describe('DeleteCommentUseCase', () => {
 
     // Action and Assert
     await expect(deleteCommentUseCase.execute(threadId, commentId, userId))
-      .rejects.toThrowError('komentar tidak ditemukan');
+      .rejects.toThrowError('Anda tidak memiliki akses untuk menghapus komentar ini');
+
+    expect(mockCommentRepository.deleteComment).not.toBeCalled();
   });
 
   it('should throw AuthorizationError when user is not comment owner', async () => {
@@ -92,10 +110,12 @@ describe('DeleteCommentUseCase', () => {
 
     mockThreadRepository.verifyThreadExists = vi.fn()
       .mockImplementation(() => Promise.resolve());
-    mockCommentRepository.deleteComment = vi.fn()
+    mockCommentRepository.verifyCommentExists = vi.fn()
       .mockImplementation(() => {
-        throw new Error('Anda tidak memiliki akses untuk menghapus komentar ini');
+        throw new Error('komentar tidak ditemukan');
       });
+    mockCommentRepository.verifyCommentOwner = vi.fn();
+    mockCommentRepository.deleteComment = vi.fn();
 
     const deleteCommentUseCase = new DeleteCommentUseCase({
       threadRepository: mockThreadRepository,
@@ -104,6 +124,9 @@ describe('DeleteCommentUseCase', () => {
 
     // Action and Assert
     await expect(deleteCommentUseCase.execute(threadId, commentId, userId))
-      .rejects.toThrowError('Anda tidak memiliki akses untuk menghapus komentar ini');
+      .rejects.toThrowError('komentar tidak ditemukan');
+
+    expect(mockCommentRepository.verifyCommentOwner).not.toBeCalled();
+    expect(mockCommentRepository.deleteComment).not.toBeCalled();
   });
 });

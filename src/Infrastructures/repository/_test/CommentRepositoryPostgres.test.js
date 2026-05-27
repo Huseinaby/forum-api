@@ -67,28 +67,6 @@ describe('CommentRepositoryPostgres', () => {
   });
 
   describe('deleteComment function', () => {
-    it('should throw NotFoundError when comment not found', async () => {
-      // Arrange
-      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
-
-      // Action & Assert
-      await expect(commentRepositoryPostgres.deleteComment('comment-invalid', 'user-123'))
-        .rejects.toThrowError(NotFoundError);
-    });
-
-    it('should throw AuthorizationError when user is not comment owner', async () => {
-      // Arrange
-      await UsersTableTestHelper.addUser({ id: 'user-123' });
-      await UsersTableTestHelper.addUser({ id: 'user-456', username: 'johndoe' });
-      await ThreadsTableTestHelper.addThread({ id: 'thread-123', owner: 'user-123' });
-      await CommentsTableTestHelper.addComment({ id: 'comment-123', threadId: 'thread-123', owner: 'user-123' });
-      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
-
-      // Action & Assert
-      await expect(commentRepositoryPostgres.deleteComment('comment-123', 'user-456'))
-        .rejects.toThrowError(AuthorizationError);
-    });
-
     it('should soft delete comment correctly', async () => {
       // Arrange
       await UsersTableTestHelper.addUser({ id: 'user-123' });
@@ -97,7 +75,7 @@ describe('CommentRepositoryPostgres', () => {
       const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
 
       // Action
-      await commentRepositoryPostgres.deleteComment('comment-123', 'user-123');
+      await commentRepositoryPostgres.deleteComment('comment-123');
 
       // Assert
       const comments = await CommentsTableTestHelper.findCommentsById('comment-123');
@@ -187,7 +165,7 @@ describe('CommentRepositoryPostgres', () => {
       expect(comments[0].id).toEqual('comment-123');
       expect(comments[0].username).toEqual('dicoding');
       expect(comments[0].content).toEqual('sebuah comment');
-      expect(comments[0].likeCount).toEqual(0);
+      expect(comments[0].like_count).toEqual(0);
     });
 
     it('should return comments with likeCount correctly', async () => {
@@ -209,7 +187,7 @@ describe('CommentRepositoryPostgres', () => {
 
       // Assert
       expect(comments).toHaveLength(1);
-      expect(comments[0].likeCount).toEqual(2);
+      expect(comments[0].like_count).toEqual(2);
     });
 
     it('should return deleted comment with deleted text', async () => {
@@ -229,7 +207,8 @@ describe('CommentRepositoryPostgres', () => {
       const comments = await commentRepositoryPostgres.getCommentsByThreadId('thread-123');
 
       // Assert
-      expect(comments[0].content).toEqual('**komentar telah dihapus**');
+      expect(comments[0].content).toEqual('sebuah comment');
+      expect(comments[0].is_delete).toBe(true);
     });
 
     it('should return comments sorted by created_at ascending', async () => {

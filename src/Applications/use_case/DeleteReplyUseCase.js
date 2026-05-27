@@ -6,12 +6,11 @@ class DeleteReplyUseCase {
   }
 
   async execute(threadId, commentId, replyId, userId) {
-    // Verify thread exists
     await this._threadRepository.verifyThreadExists(threadId);
-    // Verify comment exists
     await this._commentRepository.verifyCommentExists(commentId);
-    // Delete reply (this will also verify ownership)
-    await this._replyRepository.deleteReply(replyId, userId);
+    await this._replyRepository.verifyReplyExists(replyId);
+    await this._replyRepository.verifyReplyOwner(replyId, userId);
+    await this._replyRepository.deleteReply(replyId);
   }
 }
 

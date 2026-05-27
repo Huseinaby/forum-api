@@ -1,5 +1,4 @@
 import AddedReply from '../../Domains/replies/entities/AddedReply.js';
-import ReplyDetail from '../../Domains/replies/entities/ReplyDetail.js';
 import ReplyRepository from '../../Domains/replies/ReplyRepository.js';
 import NotFoundError from '../../Commons/exceptions/NotFoundError.js';
 import AuthorizationError from '../../Commons/exceptions/AuthorizationError.js';
@@ -25,10 +24,7 @@ class ReplyRepositoryPostgres extends ReplyRepository {
     return new AddedReply({ ...result.rows[0] });
   }
 
-  async deleteReply(replyId, userId) {
-    await this.verifyReplyExists(replyId);
-    await this.verifyReplyOwner(replyId, userId);
-
+  async deleteReply(replyId) {
     const query = {
       text: 'UPDATE replies SET is_delete = true WHERE id = $1',
       values: [replyId],
@@ -76,13 +72,7 @@ class ReplyRepositoryPostgres extends ReplyRepository {
 
     const result = await this._pool.query(query);
 
-    return result.rows.map((row) => new ReplyDetail({
-      id: row.id,
-      username: row.username,
-      date: row.date,
-      content: row.content,
-      isDelete: row.is_delete,
-    }));
+    return result.rows;
   }
 }
 

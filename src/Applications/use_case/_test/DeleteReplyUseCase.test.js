@@ -22,6 +22,10 @@ describe('DeleteReplyUseCase', () => {
       .mockImplementation(() => Promise.resolve());
     mockCommentRepository.verifyCommentExists = vi.fn()
       .mockImplementation(() => Promise.resolve());
+    mockReplyRepository.verifyReplyExists = vi.fn()
+      .mockImplementation(() => Promise.resolve());
+    mockReplyRepository.verifyReplyOwner = vi.fn()
+      .mockImplementation(() => Promise.resolve());
     mockReplyRepository.deleteReply = vi.fn()
       .mockImplementation(() => Promise.resolve());
 
@@ -38,6 +42,8 @@ describe('DeleteReplyUseCase', () => {
     // Assert
     expect(mockThreadRepository.verifyThreadExists).toBeCalledWith(threadId);
     expect(mockCommentRepository.verifyCommentExists).toBeCalledWith(commentId);
-    expect(mockReplyRepository.deleteReply).toBeCalledWith(replyId, userId);
+    expect(mockReplyRepository.verifyReplyExists).toBeCalledWith(replyId);
+    expect(mockReplyRepository.verifyReplyOwner).toBeCalledWith(replyId, userId);
+    expect(mockReplyRepository.deleteReply).toBeCalledWith(replyId);
   });
 });

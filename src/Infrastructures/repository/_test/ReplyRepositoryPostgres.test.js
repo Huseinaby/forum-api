@@ -71,30 +71,6 @@ describe('ReplyRepositoryPostgres', () => {
   });
 
   describe('deleteReply function', () => {
-    it('should throw NotFoundError when reply not found', async () => {
-      // Arrange
-      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
-
-      // Action & Assert
-      await expect(replyRepositoryPostgres.deleteReply('reply-invalid', 'user-123'))
-        .rejects.toThrowError(NotFoundError);
-    });
-
-    it('should throw AuthorizationError when user is not reply owner', async () => {
-      // Arrange
-      await UsersTableTestHelper.addUser({ id: 'user-123' });
-      await UsersTableTestHelper.addUser({ id: 'user-456', username: 'johndoe' });
-      await ThreadsTableTestHelper.addThread({ id: 'thread-123', owner: 'user-123' });
-      await CommentsTableTestHelper.addComment({ id: 'comment-123', threadId: 'thread-123', owner: 'user-123' });
-      await RepliesTableTestHelper.addReply({ id: 'reply-123', commentId: 'comment-123', owner: 'user-123' });
-
-      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
-
-      // Action & Assert
-      await expect(replyRepositoryPostgres.deleteReply('reply-123', 'user-456'))
-        .rejects.toThrowError(AuthorizationError);
-    });
-
     it('should soft delete reply correctly', async () => {
       // Arrange
       await UsersTableTestHelper.addUser({ id: 'user-123' });
@@ -105,7 +81,7 @@ describe('ReplyRepositoryPostgres', () => {
       const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
 
       // Action
-      await replyRepositoryPostgres.deleteReply('reply-123', 'user-123');
+      await replyRepositoryPostgres.deleteReply('reply-123');
 
       // Assert
       const replies = await RepliesTableTestHelper.findRepliesById('reply-123');
@@ -189,7 +165,8 @@ describe('ReplyRepositoryPostgres', () => {
       const replies = await replyRepositoryPostgres.getRepliesByCommentId('comment-123');
 
       // Assert
-      expect(replies[0].content).toEqual('**balasan telah dihapus**');
+      expect(replies[0].content).toEqual('sebuah balasan');
+      expect(replies[0].is_delete).toBe(true);
     });
 
     it('should return replies sorted by date ascending', async () => {
