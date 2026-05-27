@@ -26,7 +26,9 @@ const createServer = async (container) => {
   // Global error handler
   // eslint-disable-next-line no-unused-vars
   app.use((error, req, res, _next) => {
+    // log stack trace supaya mudah debugging (akan tampil di stdout/stderr)
     // bila response tersebut error, tangani sesuai kebutuhan
+    console.error(error.stack || error);
     const translatedError = DomainErrorTranslator.translate(error);
 
     // penanganan client error secara internal.
